@@ -1,0 +1,54 @@
+[
+  {
+    "timestamp": "2025-01-26T17:55:25.360964",
+    "video": "/Users/j0d0hge/Documents/GitHub/Pitcher Pull/trimmed_trimmed_dodgers.mp4",
+    "metrics": {
+      "arm_slot_consistency": null,
+      "stride_length": null,
+      "hip_shoulder_separation": null,
+      "balance_point_stability": null,
+      "follow_through_completion": null,
+      "potential_issues": []
+    }
+  },
+  {
+    "timestamp": "2025-01-26T18:02:46.221479",
+    "video": "/Users/j0d0hge/Documents/GitHub/Pitcher Pull/trimmed_trimmed_dodgers.mp4",
+    "metrics": {
+      "arm_slot_consistency": null,
+      "stride_length": null,
+      "hip_shoulder_separation": null,
+      "balance_point_stability": null,
+      "follow_through_completion": null,
+      "potential_issues": [],
+      "poses": []
+    }
+  },
+  {
+    "timestamp": "2025-01-26T18:06:47.001768",
+    "video": "/Users/j0d0hge/Documents/GitHub/Pitcher Pull/trimmed_trimmed_dodgers.mp4",
+    "metrics": {
+      "arm_slot_consistency": null,
+      "stride_length": null,
+      "hip_shoulder_separation": null,
+      "balance_point_stability": null,
+      "follow_through_completion": null,
+      "potential_issues": [],
+      "poses": []
+    }
+  },
+  {
+    "timestamp": "2025-01-26T18:14:40.657390",
+    "video": "/Users/j0d0hge/Documents/GitHub/Pitcher Pull/trimmed_trimmed_dodgers.mp4",
+    "metrics": {
+      "pitch_type": "FASTBALL",
+      "arm_slot_consistency": null,
+      "stride_length": null,
+      "hip_shoulder_separation": null,
+      "balance_point_stability": null,
+      "follow_through_completion": null,
+      "potential_issues": [],
+      "poses": []
+    }
+  }
+]

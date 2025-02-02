@@ -1,0 +1,141 @@
+import vertexai
+from vertexai.language_models import TextGenerationModel
+from google.cloud import videointelligence
+from google.cloud import aiplatform
+import pandas as pd
+import os
+import logging
+from pathlib import Path
+
+class PitcherAnalyzer:
+    def __init__(self):
+        # Set up logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize Google Cloud services
+        self.project_id = "baseball-pitcher-analyzer"
+        self.location = "us-central1"
+        
+        # Ensure credentials are properly set
+        credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        if not credentials_path:
+            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+            
+        vertexai.init(project=self.project_id, location=self.location)
+        
+    def analyze_historical_data(self, database_path):
+        """
+        Analyze historical pitcher data using Vertex AI Search
+        """
+        # Load historical data from database
+        historical_data = pd.read_csv(database_path)
+        
+        # Initialize Vertex AI Search
+        search_instance = aiplatform.MatchingEngine.create_index(
+            display_name="pitcher_patterns",
+            dimensions=len(historical_data.columns),
+            approximate_neighbors_count=10
+        )
+        
+        # Index historical data for pattern matching
+        return search_instance
+
+    def analyze_new_pitch(self, video_path):
+        """
+        Analyze new pitch video using Google AI Studio
+        """
+        # Initialize video intelligence client
+        video_client = videointelligence.VideoIntelligenceServiceClient()
+        
+        # Configure video analysis
+        features = [videointelligence.Feature.OBJECT_TRACKING]
+        
+        with open(video_path, "rb") as file:
+            input_content = file.read()
+        
+        # Analyze video
+        operation = video_client.annotate_video(
+            request={
+                "features": features,
+                "input_content": input_content,
+            }
+        )
+        
+        result = operation.result(timeout=90)
+        return self._extract_pitch_metrics(result)
+
+    def _extract_pitch_metrics(self, video_analysis):
+        """
+        Extract relevant metrics from video analysis
+        """
+        metrics = {
+            'arm_angle': None,
+            'release_point': None,
+            'velocity': None,
+            'spin_rate': None,
+            'control': None
+        }
+        # Process video analysis to populate metrics
+        return metrics
+
+    def compare_with_gemini(self, new_pitch_metrics, historical_patterns):
+        """
+        Use Gemini to compare new pitch with historical data
+        """
+        # Initialize Gemini
+        model = TextGenerationModel.from_pretrained("gemini-pro")
+        
+        # Construct prompt
+        prompt = f"""
+        Analyze these pitcher metrics against historical patterns:
+        New pitch metrics: {new_pitch_metrics}
+        Historical patterns indicating pitcher fatigue: {historical_patterns}
+        Should this pitcher be pulled from the game?
+        Provide reasoning based on specific metrics.
+        """
+        
+        # Get Gemini's analysis
+        response = model.predict(prompt)
+        return response.text
+
+    def _validate_paths(self, video_path: str, database_path: str) -> bool:
+        """Validate that input files exist and are accessible"""
+        video_file = Path(video_path)
+        database_file = Path(database_path)
+        
+        if not video_file.exists():
+            self.logger.error(f"Video file not found: {video_path}")
+            return False
+        if not database_file.exists():
+            self.logger.error(f"Database file not found: {database_path}")
+            return False
+        return True
+
+    def should_pull_pitcher(self, video_path: str, database_path: str):
+        """
+        Main function to determine if pitcher should be pulled
+        """
+        if not self._validate_paths(video_path, database_path):
+            raise FileNotFoundError("Required input files are missing")
+            
+        self.logger.info("Starting pitcher analysis...")
+        # Step 1: Analyze historical data
+        historical_patterns = self.analyze_historical_data(database_path)
+        
+        # Step 2: Analyze new pitch
+        new_pitch_metrics = self.analyze_new_pitch(video_path)
+        
+        # Step 3: Compare using Gemini
+        decision = self.compare_with_gemini(new_pitch_metrics, historical_patterns)
+        
+        return decision
+
+# Usage example
+if __name__ == "__main__":
+    analyzer = PitcherAnalyzer()
+    result = analyzer.should_pull_pitcher(
+        video_path="path/to/pitch_video.mp4",
+        database_path="path/to/historical_data.csv"
+    )
+    print(f"Analysis Result: {result}")
