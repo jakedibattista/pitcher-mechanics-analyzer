@@ -38,7 +38,7 @@ Follow QUICKSTART.MD for setup instructions.
 
 ## License
 
-[MIT License](LICENSE)
+[MIT License]
 
 ## Project Structure
 
