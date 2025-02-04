@@ -1,11 +1,11 @@
 # Core dependencies
+google-cloud-aiplatform>=1.38.0
+vertexai>=0.0.1
 opencv-python>=4.8.0
 numpy>=1.24.0
-vertexai>=0.0.1
-google-cloud-storage>=2.13.0
+python-dotenv>=1.0.0
 
 # Google Cloud dependencies
-google-cloud-aiplatform>=1.36.0
 google-auth>=2.23.0
 google-auth-oauthlib>=1.1.0
 
@@ -20,4 +20,18 @@ flake8>=6.1.0
 
 # Optional dependencies for development
 ipython>=8.12.0
-jupyter>=1.0.0 
+jupyter>=1.0.0
+
+# Visualization
+matplotlib>=3.7.0
+
+
+## Expected Output
+The analyzer will generate:
+1. Mechanical analysis in the console
+2. Visualization in `analysis_output/`
+
+## Troubleshooting
+- Ensure Google Cloud credentials are properly set
+- Check video format is MP4
+- Verify Python 3.8+ is installed 
