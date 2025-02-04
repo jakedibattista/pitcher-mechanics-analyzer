@@ -34,7 +34,7 @@ An AI-powered tool for analyzing baseball pitcher mechanics using computer visio
 
 ## Installation
 
-Follow the [Quick Start Guide](QUICKSTART.md) for setup instructions.
+Follow QUICKSTART.MD for setup instructions.
 
 ## License
 
