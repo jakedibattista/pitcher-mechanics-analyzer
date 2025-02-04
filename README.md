@@ -2,14 +2,6 @@
 
 An AI-powered tool for analyzing baseball pitcher mechanics using computer vision and machine learning.
 
-## Overview
-
-This project uses Vertex AI (Gemini Pro Vision) to analyze baseball pitcher mechanics from video footage. It can:
-- Analyze different pitch types (Curveball, Slider)
-- Compare mechanics to pitcher-specific ideal forms
-- Detect mechanical deviations and fatigue signs
-- Generate visual analysis overlays
-
 ## Features
 
 - **Multi-Pitcher Support**: Currently supports analysis of:
@@ -27,35 +19,26 @@ This project uses Vertex AI (Gemini Pro Vision) to analyze baseball pitcher mech
   - Pitcher scorecard generation
   - Mechanical variance assessment
 
+- **Multi-frame mechanics analysis**
+- **Pitcher-specific customization**
+- **Game context integration**
+- **Detailed mechanical breakdown**
+- **Real-time analysis**
+
+## Requirements
+
+- Python 3.8+
+- Google Cloud account
+- Vertex AI API enabled
+- Sample video data
+
 ## Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/pitcher-mechanics-analyzer.git
-cd pitcher-mechanics-analyzer
-```
+Follow the [Quick Start Guide](QUICKSTART.md) for setup instructions.
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## License
 
-3. Set up Google Cloud credentials for Vertex AI:
-```bash
-export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/credentials.json"
-```
-
-## Usage
-
-Basic analysis:
-```bash
-python -m pitcher_analyzer.debug_analysis [video_name] [pitch_type] [pitcher_name]
-```
-
-Example:
-```bash
-python -m pitcher_analyzer.debug_analysis kershaw2 CURVEBALL KERSHAW
-```
+[MIT License](LICENSE)
 
 ## Project Structure
 
@@ -86,3 +69,5 @@ This project uses video data from MLB broadcasts. All MLB content is the propert
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+
