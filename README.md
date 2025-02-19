@@ -2,6 +2,8 @@
 
 An AI-powered tool for analyzing baseball pitcher mechanics using computer vision and machine learning.
 
+See a demo of the product in action here: https://www.youtube.com/watch?v=nHqDvu8WAPM
+
 ## Features
 
 - **Multi-Pitcher Support**: Currently supports analysis of:
