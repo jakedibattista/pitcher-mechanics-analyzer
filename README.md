@@ -2,6 +2,10 @@
 
 A machine learning-powered tool for analyzing baseball pitcher mechanics using video analysis and Vertex AI.
 
+https://pitcher-analyzer-238493405692.us-central1.run.app/
+
+See app in action above
+
 ## Features
 - Upload and analyze pitch videos
 - Support for multiple pitch types (Fastball, Curveball, Slider, Changeup)
