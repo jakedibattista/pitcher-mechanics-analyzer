@@ -1,23 +1,16 @@
 # Core dependencies
-opencv-python>=4.8.0
+google-cloud-storage>=2.8.0
+opencv-python-headless>=4.7.0
 numpy>=1.24.0
-vertexai>=0.0.1
-google-cloud-storage>=2.13.0
-
-# Google Cloud dependencies
-google-cloud-aiplatform>=1.36.0
-google-auth>=2.23.0
-google-auth-oauthlib>=1.1.0
+google-cloud-vision>=3.4.0
 
 # Video processing
-ffmpeg-python>=0.2.0
+google-cloud-videointelligence>=2.11.0
 
-# Development dependencies
-pytest>=7.4.0
-pytest-cov>=4.1.0
-black>=23.7.0
-flake8>=6.1.0
+# Visualization
+streamlit>=1.24.0
 
-# Optional dependencies for development
-ipython>=8.12.0
-jupyter>=1.0.0 
+# Google Cloud dependencies
+vertexai>=0.0.1
+google-cloud-aiplatform>=1.25.0
+python-dotenv>=1.0.0

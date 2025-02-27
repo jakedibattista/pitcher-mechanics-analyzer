@@ -1,8 +1,8 @@
 import logging
-from .video_processor import VideoProcessor
-from .mechanics_analyzer import MechanicsAnalyzer
-from .visualization import create_analysis_visualization
-from .game_state import GameStateManager
+from pitcher_analyzer.video_processor import VideoProcessor
+from pitcher_analyzer.mechanics_analyzer import MechanicsAnalyzer
+from pitcher_analyzer.visualization import create_analysis_visualization
+from pitcher_analyzer.game_state import GameStateManager
 
 class PitcherAnalysis:
     def __init__(self):

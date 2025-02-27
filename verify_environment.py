@@ -2,6 +2,7 @@ import os
 from google.cloud import storage
 import logging
 from pathlib import Path
+import json
 
 class EnvironmentVerifier:
     def __init__(self):
@@ -33,17 +34,33 @@ class EnvironmentVerifier:
             
     def check_credentials(self):
         """Check Google Cloud credentials"""
-        creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-        if not creds_path:
-            self.logger.error("GOOGLE_APPLICATION_CREDENTIALS not set")
-            return False
+        try:
+            # Check .env file
+            creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+            if not creds_path:
+                self.logger.error("GOOGLE_APPLICATION_CREDENTIALS not set in .env")
+                return False
             
-        if not os.path.exists(creds_path):
-            self.logger.error(f"Credentials file not found: {creds_path}")
-            return False
+            # Check service account file
+            service_account_path = Path(creds_path)
+            if not service_account_path.exists():
+                self.logger.error(f"Service account file not found at: {service_account_path}")
+                return False
             
-        self.logger.info(f"Found credentials at: {creds_path}")
-        return True
+            # Validate JSON format
+            with open(service_account_path) as f:
+                creds_json = json.load(f)
+                required_fields = ['type', 'project_id', 'private_key', 'client_email']
+                if not all(field in creds_json for field in required_fields):
+                    self.logger.error("Service account JSON missing required fields")
+                    return False
+                
+            self.logger.info("✅ Credentials verified successfully")
+            return True
+        
+        except Exception as e:
+            self.logger.error(f"Credentials check failed: {str(e)}")
+            return False
         
     def check_gcs_setup(self):
         """Verify Google Cloud Storage setup"""

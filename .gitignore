@@ -1,3 +1,12 @@
+# Project specific
+credentials.json
+baseball-pitcher-analyzer*.json
+analysis_output/
+videos/
+*.mp4
+*.avi
+*.mov
+
 # Python
 __pycache__/
 *.py[cod]
@@ -6,20 +15,8 @@ __pycache__/
 .Python
 env/
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
 
 # Virtual Environment
 venv/
@@ -28,16 +25,13 @@ ENV/
 # IDE
 .idea/
 .vscode/
-*.swp
-*.swo
-
-# Project specific
-credentials.json
-analysis_output/
-videos/
-*.mp4
-*.avi
-*.mov
 
 # Logs
-*.log 
+*.log
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Credentials
+credentials/
+.env 

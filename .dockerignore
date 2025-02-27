@@ -1,0 +1,22 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+
+# Development
+.vscode/
+*.log
+test_*.py
+debug_*.py
+
+# Credentials (since we mount them)
+credentials/ 

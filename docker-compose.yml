@@ -1,0 +1,15 @@
+services:
+  pitcher-analyzer:
+    build: .
+    ports:
+      - "8503:8501"
+    volumes:
+      - .:/app
+      - ./credentials:/app/credentials:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501"]
+      interval: 30s
+      timeout: 10s
+      retries: 3 

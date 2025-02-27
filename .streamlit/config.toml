@@ -1,0 +1,13 @@
+[server]
+enableCORS = true
+enableXsrfProtection = true
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false
+
+[server.address]
+address = "0.0.0.0"
+
+[server.port]
+port = 8501 

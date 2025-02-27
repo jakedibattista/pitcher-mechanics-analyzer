@@ -1,88 +1,178 @@
-# Baseball Pitcher Mechanics Analyzer
+# Pitcher Analysis Tool ⚾
 
-An AI-powered tool for analyzing baseball pitcher mechanics using computer vision and machine learning.
-
-## Overview
-
-This project uses Vertex AI (Gemini Pro Vision) to analyze baseball pitcher mechanics from video footage. It can:
-- Analyze different pitch types (Curveball, Slider)
-- Compare mechanics to pitcher-specific ideal forms
-- Detect mechanical deviations and fatigue signs
-- Generate visual analysis overlays
+A machine learning-powered tool for analyzing baseball pitcher mechanics using video analysis and Vertex AI.
 
 ## Features
+- Upload and analyze pitch videos
+- Support for multiple pitch types (Fastball, Curveball, Slider, Changeup)
+- Detailed mechanical analysis
+- Visual feedback and annotations
+- Game context awareness
 
-- **Multi-Pitcher Support**: Currently supports analysis of:
-  - Clayton Kershaw (Curveball, Slider)
-  - Zack Wheeler (Slider)
+## Quick Start
 
-- **Mechanical Analysis**:
-  - Power Generation
-  - Arm Action
-  - Balance/Direction
-  - Fatigue Detection
-
-- **Visual Output**:
-  - Annotated video analysis
-  - Pitcher scorecard generation
-  - Mechanical variance assessment
-
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/pitcher-mechanics-analyzer.git
-cd pitcher-mechanics-analyzer
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Set up Google Cloud credentials for Vertex AI:
+2. Run the application:
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS="path/to/your/credentials.json"
+python app.py
+```
+
+3. Open the web application in your browser:
+```bash
+http://localhost:8000
+```
+
+## Quick Start with Docker
+
+1. Set up credentials:
+   ```bash
+   mkdir -p credentials
+   # Copy your service account JSON to credentials/service-account.json
+   ```
+
+2. Run with Docker:
+   ```bash
+   docker-compose up --build
+   ```
+
+3. Access the app:
+   ```
+   http://localhost:8503
+   ```
+
+## Production Deployment
+
+The app is deployed to Google Cloud Run:
+
+```
+https://pitcher-analyzer-238493405692.us-central1.run.app
+```
+
+To deploy updates:
+```bash
+# Build and push Docker image
+docker build --platform linux/amd64 -t gcr.io/baseball-pitcher-analyzer/pitcher-analyzer .
+docker push gcr.io/baseball-pitcher-analyzer/pitcher-analyzer
+
+# Deploy to Cloud Run
+gcloud run deploy pitcher-analyzer \
+  --project baseball-pitcher-analyzer \
+  --image gcr.io/baseball-pitcher-analyzer/pitcher-analyzer \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-secrets "/app/credentials/service-account.json=pitcher-credentials:latest" \
+  --set-env-vars "GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json"
 ```
 
 ## Usage
 
-Basic analysis:
+## Expected Output
+The analyzer will generate:
+1. Mechanical analysis in real-time
+2. Visualization with annotated video in the web interface
+
+## Deployment
+To deploy to Google Cloud Run:
 ```bash
-python -m pitcher_analyzer.debug_analysis [video_name] [pitch_type] [pitcher_name]
+gcloud run deploy pitcher-analysis --image gcr.io/YOUR_PROJECT_ID/pitcher-analysis --platform managed
 ```
 
-Example:
-```bash
-python -m pitcher_analyzer.debug_analysis kershaw2 CURVEBALL KERSHAW
-```
+## Setting Up Google Cloud Credentials
 
-## Project Structure
+1. Create a Google Cloud Project
+   ```bash
+   # Visit https://console.cloud.google.com/
+   # Click "New Project" and note your Project ID
+   ```
 
-```
-pitcher_analyzer/
-├── __init__.py
-├── main.py                 # Main analysis pipeline
-├── mechanics_analyzer.py   # Mechanical analysis logic
-├── video_processor.py      # Video frame extraction
-├── visualization.py        # Analysis visualization
-├── config.py              # Configuration and profiles
-├── pose_analyzer.py        # Pose detection analysis
-├── debug_analysis.py      # Debug utilities
-├── video_downloader.py    # Video management
-└── tests/                 # Test suite
-```
+2. Enable Required APIs
+   - Go to APIs & Services > Library
+   - Enable these APIs:
+     - Cloud Storage API
+     - Vertex AI API
+     - Cloud Vision API
 
-## Data Sources
+3. Create Service Account
+   ```bash
+   # Navigate to IAM & Admin > Service Accounts
+   # Click "Create Service Account"
+   # Name: pitcher-analyzer-sa
+   # Role: Add these roles:
+     - Vertex AI User
+     - Storage Object Viewer
+   ```
 
-This project uses video data from MLB broadcasts. All MLB content is the property of MLB and its teams. Video content is used for educational and research purposes only.
+4. Generate Credentials File
+   ```bash
+   # In the Service Account details:
+   # 1. Go to "Keys" tab
+   # 2. Click "Add Key" > "Create New Key"
+   # 3. Choose JSON format
+   # 4. Download the key file
+   ```
 
-## Dependencies
+5. Set Up Credentials in Project
+   ```bash
+   # Create credentials directory
+   mkdir credentials
+   
+   # Copy your downloaded JSON key to credentials/
+   cp path/to/downloaded/key.json credentials/service-account.json
+   
+   # Create .env file
+   echo "GOOGLE_APPLICATION_CREDENTIALS=./credentials/service-account.json" > .env
+   ```
 
-- OpenCV for video processing and visualization
-- Google Cloud Vertex AI for computer vision analysis
-- Additional dependencies listed in requirements.txt
+6. Verify Setup
+   ```bash
+   # Run verification script
+   python verify_environment.py
+   ```
 
-## Contributing
+## Running with Docker
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Build the container:
+   ```bash
+   docker-compose build
+   ```
+
+2. Start the application:
+   ```bash
+   docker-compose up
+   ```
+
+3. Access the app at:
+   ```
+   http://localhost:8502
+   ```
+
+## Security Notes
+
+- Never commit credentials to version control
+- Keep your service account key secure
+- Restrict service account permissions to only what's needed
+- Regularly rotate service account keys
+
+## Troubleshooting
+
+If you see credential errors:
+1. Check that credentials/service-account.json exists
+2. Verify the file path in .env matches docker-compose.yml
+3. Ensure all required APIs are enabled
+4. Verify service account has correct permissions
+
+## Development
+To contribute:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+## Requirements
+- Python 3.8+
+- Google Cloud account with Vertex AI enabled
+- Gemini API key
