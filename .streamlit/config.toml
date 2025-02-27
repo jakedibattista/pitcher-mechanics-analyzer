@@ -5,9 +5,17 @@ maxUploadSize = 200
 
 [browser]
 gatherUsageStats = false
+serverAddress = "https://pitcher-analyzer-238493405692.us-central1.run.app"
 
 [server.address]
 address = "0.0.0.0"
 
 [server.port]
-port = 8501 
+port = 8080
+
+[theme]
+primaryColor = "#FF4B4B"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F0F2F6"
+textColor = "#262730"
+font = "sans serif" 

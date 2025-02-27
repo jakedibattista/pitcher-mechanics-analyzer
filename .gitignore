@@ -34,4 +34,19 @@ ENV/
 
 # Credentials
 credentials/
-.env 
+.env
+
+# macOS
+.DS_Store
+.DS_Store?
+.*
+.Spotlight-V100
+.Trashes
+
+# Local testing
+test_local.py
+local_*.py
+
+# Development
+test_*.py
+debug_*.py 

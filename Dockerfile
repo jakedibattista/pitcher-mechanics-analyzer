@@ -33,4 +33,5 @@ CMD streamlit run pitcher_analyzer/streamlit_app.py \
     --server.address=0.0.0.0
 
 # Set environment variables
-ENV PYTHONPATH=/app 
+ENV PYTHONPATH=/app
+ENV GCS_BUCKET=baseball-pitcher-analyzer-videos 

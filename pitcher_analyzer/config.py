@@ -198,7 +198,8 @@ class Config:
     PROJECT_ID = "baseball-pitcher-analyzer"
     PROJECT_NUMBER = "238493405692"
     LOCATION = "us-central1"  # Default Google Cloud region
-    BUCKET_NAME = "baseball-pitcher-analyzer-videos"
+    GCS_BUCKET = "baseball-pitcher-analyzer-videos"
+    GCS_LOCATION = "US-CENTRAL1"
     
     # Directory paths
     BASE_DIR = Path(__file__).parent

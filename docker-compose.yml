@@ -8,6 +8,8 @@ services:
       - ./credentials:/app/credentials:ro
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
+      - GCS_BUCKET=baseball-pitcher-analyzer-videos
+      - GCS_LOCATION=US-CENTRAL1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501"]
       interval: 30s
