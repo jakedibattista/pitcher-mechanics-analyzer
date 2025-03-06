@@ -1,22 +1,48 @@
-# Version control
+# Git
 .git
+.github
 .gitignore
 
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
 env/
-venv/
-.env
+build/
+dist/
+*.egg-info/
 
-# Development
+# Virtual Environment
+venv/
+ENV/
+
+# IDE
+.idea/
 .vscode/
+
+# Logs
 *.log
+
+# Test files
 test_*.py
 debug_*.py
 
-# Credentials (since we mount them)
-credentials/ 
+# Documentation
+README.md
+LICENSE
+*.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Other
+.DS_Store
+credentials/
+videos/
+*.mp4
+*.avi
+*.mov 
