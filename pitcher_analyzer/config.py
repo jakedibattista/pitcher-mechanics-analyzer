@@ -405,7 +405,7 @@ class Config:
     }
     
     # Google API Configuration
-    GEMINI_API_KEY = "AIzaSyBJpD3fsexPYzbh1j7Jf9gFfAoNxJbV4JY"
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')  # Get from environment variable instead
     
     # Vertex AI Configuration - Development defaults
     PROJECT_ID = "pitcher-analysis-dev"  # Default development project
