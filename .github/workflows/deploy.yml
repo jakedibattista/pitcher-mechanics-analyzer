@@ -26,15 +26,15 @@ jobs:
         
     - name: Build and push Docker image
       run: |
-        gcloud auth configure-docker
-        docker build --platform linux/amd64 -t gcr.io/baseball-pitcher-analyzer/pitcher-analyzer .
-        docker push gcr.io/baseball-pitcher-analyzer/pitcher-analyzer
+        gcloud auth configure-docker us-docker.pkg.dev
+        docker build --platform linux/amd64 -t us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:latest .
+        docker push us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:latest
         
     - name: Deploy to Cloud Run
       run: |
         gcloud run deploy pitcher-analyzer \
           --project baseball-pitcher-analyzer \
-          --image gcr.io/baseball-pitcher-analyzer/pitcher-analyzer \
+          --image us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:latest \
           --platform managed \
           --region us-central1 \
           --allow-unauthenticated 
