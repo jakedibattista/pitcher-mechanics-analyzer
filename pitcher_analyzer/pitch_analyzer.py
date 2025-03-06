@@ -1,1 +1,0 @@
-# This entire file can be removed as it only handled velocity-based pitch detection 

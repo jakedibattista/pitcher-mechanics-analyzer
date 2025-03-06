@@ -1,11 +1,14 @@
 from pathlib import Path
 import os
+from pitcher_analyzer.data.pitcher_profiles import PITCHER_PROFILES
 
 class Config:
     # Project settings
     PROJECT_ID = "baseball-pitcher-analyzer"
-    LOCATION = "us-central1"
-    BUCKET_NAME = "baseball-pitcher-analyzer-videos"
+    PROJECT_NUMBER = "238493405692"
+    LOCATION = "us-central1"  # Default Google Cloud region
+    GCS_BUCKET = "baseball-pitcher-analyzer-videos"
+    GCS_LOCATION = "US-CENTRAL1"
     
     # Directory paths
     BASE_DIR = Path(__file__).parent
@@ -16,6 +19,20 @@ class Config:
     
     # Credentials
     CREDENTIALS_PATH = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    
+    # Video processing settings
+    VIDEO_SETTINGS = {
+        "max_duration": 10,  # Maximum video length in seconds
+        "required_fps": 30,  # Required frames per second
+        "min_resolution": (640, 480)  # Minimum video resolution
+    }
+    
+    # Analysis thresholds
+    THRESHOLDS = {
+        "min_velocity": 85.0,  # MPH
+        "min_control": 70.0,  # percentage
+        "max_pitch_duration": 0.45  # seconds
+    }
     
     # Video settings
     VIDEO_REQUIREMENTS = {
@@ -50,26 +67,7 @@ class Config:
         "line_thickness": 2
     }
     
-    # MLB Film Room Play IDs
-    PLAY_IDS = {
-        "FASTBALL": {
-            "elite": "560a2f9b-9589-4e4b-95f5-2ef796334a94",
-            "tired": "another-play-id-here",
-            "normal": "another-play-id-here"
-        },
-        "CURVEBALL": {
-            "elite": "play-id-here",
-            "tired": "play-id-here",
-            "normal": "play-id-here"
-        },
-        "SLIDER": {
-            "elite": "play-id-here",
-            "tired": "play-id-here",
-            "normal": "play-id-here"
-        }
-    }
-    
-    # Pitching mechanics thresholds
+    # Mechanics thresholds
     MECHANICS = {
         "max_arm_angle_variance": 5.0,  # degrees
         "min_stride_length": 0.85,  # % of height
@@ -94,195 +92,344 @@ class Config:
         }
     }
     
-    # Add to Config class
+    # Complete pitcher profiles configuration
     PITCHER_PROFILES = {
-        "KERSHAW": {
-            "mechanics": {
-                "arm_slot": "1 o'clock",
-                "release_height": "6.4 feet",
-                "stride_length": "87% of height",
-                "hip_rotation_speed": "Elite",
-                "curveball_specifics": {
-                    "setup": {
-                        "glove_height": "chest_level",
-                        "foot_position": "third_base_side",
-                        "hip_alignment": "closed"
-                    },
-                    "key_positions": {
-                        "leg_lift": {
-                            "knee_height": "belt",
-                            "balance_point": "over_rubber",
-                            "head_position": "centered"
-                        },
-                        "stride": {
-                            "direction": "straight_to_plate",
-                            "length": "87%_of_height",
-                            "hip_shoulder_separation": "40_degrees"
-                        },
-                        "release": {
-                            "arm_slot": "1_oclock",
-                            "spine_tilt": "85_degrees",
-                            "front_knee_flex": "45_degrees",
-                            "head_position": "stable_centered"
-                        }
-                    },
-                    "timing_sequence": {
-                        "leg_lift_duration": "1.2_seconds",
-                        "drive_to_plate": "0.4_seconds",
-                        "arm_acceleration": "0.15_seconds"
-                    }
-                }
-            },
+        "AMATEUR": {
             "pitches": {
+                "FASTBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 70.0,  # More forgiving baseline
+                        "stride_length": 0.85,  # Slightly shorter stride
+                        "hip_shoulder_separation": 35.0,
+                        "front_knee_flex": 43.0,
+                        "trunk_tilt": 28.0
+                    },
+                    "velocity_range": (75, 85),  # Lower velocity expectations
+                    "release_point": (5.5, 6.0),
+                    "spin_rate": (1800, 2200)
+                },
                 "CURVEBALL": {
-                    "release_point": "High 3/4",
-                    "arm_slot_variance": "± 0.5°",
-                    "spine_angle": "85°",
-                    "historical_data": {
-                        "avg_spin_rate": "2650 RPM",
-                        "vertical_break": "64 inches",
-                        "release_height": "6.3-6.5 feet",
-                        "arm_slot_consistency": "98%",
-                        "signature_mechanics": [
-                            "Extreme over-the-top arm slot",
-                            "High elbow position at release",
-                            "Strong front leg block",
-                            "Maintained posture through release"
-                        ],
-                        "career_highlights": {
-                            "best_curveball_season": "2016",
-                            "whiff_rate": "52%",
-                            "put_away_rate": "47%"
-                        }
-                    }
+                    "ideal_mechanics": {
+                        "arm_slot": 72.0,
+                        "stride_length": 0.85,
+                        "hip_shoulder_separation": 35.0,
+                        "front_knee_flex": 45.0,
+                        "trunk_tilt": 30.0
+                    },
+                    "velocity_range": (65, 75),
+                    "release_point": (5.5, 6.0),
+                    "spin_rate": (2000, 2400)
                 },
                 "SLIDER": {
-                    # ... slider-specific data
+                    "ideal_mechanics": {
+                        "arm_slot": 70.0,
+                        "stride_length": 0.85,
+                        "hip_shoulder_separation": 35.0,
+                        "front_knee_flex": 43.0,
+                        "trunk_tilt": 28.0
+                    },
+                    "velocity_range": (70, 80),
+                    "release_point": (5.5, 6.0),
+                    "spin_rate": (2000, 2400)
+                },
+                "CHANGEUP": {
+                    "ideal_mechanics": {
+                        "arm_slot": 70.0,
+                        "stride_length": 0.85,
+                        "hip_shoulder_separation": 35.0,
+                        "front_knee_flex": 43.0,
+                        "trunk_tilt": 28.0
+                    },
+                    "velocity_range": (65, 75),
+                    "release_point": (5.5, 6.0),
+                    "spin_rate": (1600, 1800)
                 }
             },
-            "career_stats": {
-                "perfect_games": ["2014-06-18", "2022-04-13"]
+            "height": 72,  # Average height
+            "handedness": "RIGHT",  # Default
+            "signature_pitch": "FASTBALL",
+            "is_amateur": True  # Flag for amateur analysis
+        },
+        "KERSHAW": {
+            "pitches": {
+                "FASTBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 75.0,
+                        "stride_length": 0.90,
+                        "hip_shoulder_separation": 35.0,
+                        "front_knee_flex": 45.0,
+                        "trunk_tilt": 30.0
+                    },
+                    "velocity_range": (90, 93),
+                    "release_point": (5.8, 6.2),
+                    "spin_rate": (2200, 2400)
+                },
+                "CURVEBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 80.0,
+                        "stride_length": 0.88,
+                        "hip_shoulder_separation": 38.0,
+                        "front_knee_flex": 48.0,
+                        "trunk_tilt": 32.0
+                    },
+                    "velocity_range": (72, 75),
+                    "release_point": (5.9, 6.3),
+                    "spin_rate": (2500, 2700)
+                },
+                "SLIDER": {
+                    "ideal_mechanics": {
+                        "arm_slot": 77.0,
+                        "stride_length": 0.89,
+                        "hip_shoulder_separation": 36.0,
+                        "front_knee_flex": 46.0,
+                        "trunk_tilt": 31.0
+                    },
+                    "velocity_range": (84, 87),
+                    "release_point": (5.8, 6.2),
+                    "spin_rate": (2700, 2900)
+                },
+                "CHANGEUP": {
+                    "ideal_mechanics": {
+                        "arm_slot": 75.0,
+                        "stride_length": 0.90,
+                        "hip_shoulder_separation": 35.0,
+                        "front_knee_flex": 45.0,
+                        "trunk_tilt": 30.0
+                    },
+                    "velocity_range": (83, 86),
+                    "release_point": (5.8, 6.2),
+                    "spin_rate": (1800, 2000)
+                }
             },
-            "late_game_mechanics": {
-                "arm_slot_consistency": "92%",
-                "release_variance": "0.8 inches",
-                "efficiency_rating": "88%"
-            }
+            "height": 75,
+            "handedness": "LEFT",
+            "signature_pitch": "CURVEBALL"
         },
         "CORTES": {
-            "mechanics": {
-                "typical_stride_length": 0.68,  # Shorter stride length
-                "typical_arm_slots": {
-                    "FASTBALL": 150,  # Higher arm slot
-                    "SLIDER": 145,
-                    "CUTTER": 145
-                },
-                "release_points": {
-                    "FASTBALL": {"height": 5.9, "extension": 6.0},
-                    "SLIDER": {"height": 5.8, "extension": 5.9},
-                    "CUTTER": {"height": 5.8, "extension": 5.9}
-                }
-            },
-            "career_stats": {
-                "years_active": "2021-present",
-                "typical_velocity": {
-                    "FASTBALL": "92-94",
-                    "SLIDER": "80-82",
-                    "CUTTER": "86-88"
-                }
-            }
-        },
-        "WHEELER": {
-            "mechanics": {
-                "arm_slot": "High 3/4",
-                "release_height": "6.2 feet",
-                "stride_length": "90% of height",
-                "hip_rotation_speed": "Elite+",
-                "delivery_style": "Power/Athletic",
-                "tempo": "Explosive",
-                "slider_specifics": {
-                    "setup": {
-                        "glove_height": "chest_level",
-                        "foot_position": "first_base_side",
-                        "hip_alignment": "slightly_open",
-                        "balance_point": "aggressive_coil"
-                    },
-                    "key_positions": {
-                        "leg_lift": {
-                            "knee_height": "waist",
-                            "balance_point": "over_rubber",
-                            "head_position": "centered",
-                            "torso_tilt": "slight_first_base"
-                        },
-                        "stride": {
-                            "direction": "direct_to_plate",
-                            "length": "90%_of_height",
-                            "hip_shoulder_separation": "45_degrees",
-                            "front_foot_landing": "closed",
-                            "timing": "explosive_from_gather"
-                        },
-                        "release": {
-                            "arm_slot": "high_three_quarters",
-                            "spine_tilt": "75_degrees",
-                            "front_knee_flex": "45_degrees",
-                            "head_position": "stable_centered",
-                            "power_position": {
-                                "front_hip_lock": "firm",
-                                "torque_generation": "elite",
-                                "shoulder_position": "uphill"
-                            }
-                        }
-                    },
-                    "unique_characteristics": {
-                        "power_generation": "elite_lower_half",
-                        "arm_speed": "explosive",
-                        "front_side": "firm_and_closed",
-                        "finish": "power_through_release"
-                    }
-                }
-            },
             "pitches": {
+                "FASTBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 68.0,
+                        "stride_length": 0.85,
+                        "hip_shoulder_separation": 33.0,
+                        "front_knee_flex": 40.0,
+                        "trunk_tilt": 25.0
+                    },
+                    "velocity_range": (89, 92),
+                    "release_point": (5.5, 5.9),
+                    "spin_rate": (2100, 2300)
+                },
                 "SLIDER": {
-                    "release_point": "High 3/4",
-                    "arm_slot_variance": "± 0.4°",
-                    "spine_angle": "75°",
-                    "historical_data": {
-                        "avg_spin_rate": "2450 RPM",
-                        "horizontal_break": "6 inches",
-                        "vertical_break": "-2 inches",
-                        "release_height": "6.0-6.2 feet",
-                        "arm_slot_consistency": "95%",
-                        "velocity_band": "89-92 mph",
-                        "signature_mechanics": [
-                            "High three-quarters power slot",
-                            "Explosive drive through release",
-                            "Strong closed front side",
-                            "Aggressive finish to first base",
-                            "Elite hip-shoulder separation"
-                        ],
-                        "career_highlights": {
-                            "best_slider_season": "2021",
-                            "whiff_rate": "38%",
-                            "put_away_rate": "35%",
-                            "chase_rate": "42%"
-                        },
-                        "2021_specifics": {
-                            "avg_velocity": "90.8 mph",
-                            "max_velocity": "93.2 mph",
-                            "horizontal_movement": "+4.2 inches",
-                            "vertical_movement": "-1.8 inches",
-                            "spin_efficiency": "85%"
-                        }
-                    }
+                    "ideal_mechanics": {
+                        "arm_slot": 65.0,
+                        "stride_length": 0.84,
+                        "hip_shoulder_separation": 32.0,
+                        "front_knee_flex": 42.0,
+                        "trunk_tilt": 26.0
+                    },
+                    "velocity_range": (78, 82),
+                    "release_point": (5.4, 5.8),
+                    "spin_rate": (2400, 2600)
+                },
+                "CHANGEUP": {
+                    "ideal_mechanics": {
+                        "arm_slot": 67.0,
+                        "stride_length": 0.85,
+                        "hip_shoulder_separation": 33.0,
+                        "front_knee_flex": 41.0,
+                        "trunk_tilt": 25.0
+                    },
+                    "velocity_range": (81, 84),
+                    "release_point": (5.5, 5.9),
+                    "spin_rate": (1700, 1900)
+                },
+                "CURVEBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 70.0,
+                        "stride_length": 0.86,
+                        "hip_shoulder_separation": 34.0,
+                        "front_knee_flex": 43.0,
+                        "trunk_tilt": 27.0
+                    },
+                    "velocity_range": (72, 75),
+                    "release_point": (5.6, 6.0),
+                    "spin_rate": (2300, 2500)
                 }
             },
-            "mechanical_keys": {
-                "power_position": "elite",
-                "front_side": "firm",
-                "direction": "inline",
-                "tempo": "explosive",
-                "arm_action": "clean_and_quick"
-            }
+            "height": 71,
+            "handedness": "LEFT",
+            "signature_pitch": "SLIDER"
+        },
+        "DEGROM": {
+            "pitches": {
+                "FASTBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 73.0,
+                        "stride_length": 0.95,
+                        "hip_shoulder_separation": 42.0,
+                        "front_knee_flex": 45.0,
+                        "trunk_tilt": 32.0
+                    },
+                    "velocity_range": (98, 102),
+                    "release_point": (6.2, 6.6),
+                    "spin_rate": (2400, 2600)
+                },
+                "SLIDER": {
+                    "ideal_mechanics": {
+                        "arm_slot": 72.0,
+                        "stride_length": 0.94,
+                        "hip_shoulder_separation": 41.0,
+                        "front_knee_flex": 44.0,
+                        "trunk_tilt": 31.0
+                    },
+                    "velocity_range": (91, 94),
+                    "release_point": (6.1, 6.5),
+                    "spin_rate": (2800, 3000)
+                },
+                "CHANGEUP": {
+                    "ideal_mechanics": {
+                        "arm_slot": 73.0,
+                        "stride_length": 0.95,
+                        "hip_shoulder_separation": 42.0,
+                        "front_knee_flex": 45.0,
+                        "trunk_tilt": 32.0
+                    },
+                    "velocity_range": (88, 91),
+                    "release_point": (6.2, 6.6),
+                    "spin_rate": (1900, 2100)
+                },
+                "CURVEBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 75.0,
+                        "stride_length": 0.96,
+                        "hip_shoulder_separation": 43.0,
+                        "front_knee_flex": 46.0,
+                        "trunk_tilt": 33.0
+                    },
+                    "velocity_range": (82, 85),
+                    "release_point": (6.3, 6.7),
+                    "spin_rate": (2600, 2800)
+                }
+            },
+            "height": 76,
+            "handedness": "RIGHT",
+            "signature_pitch": "FASTBALL"
+        },
+        "OHTANI": {
+            "pitches": {
+                "FASTBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 72.0,
+                        "stride_length": 0.95,
+                        "hip_shoulder_separation": 40.0,
+                        "front_knee_flex": 42.0,
+                        "trunk_tilt": 28.0
+                    },
+                    "velocity_range": (96, 101),
+                    "release_point": (6.0, 6.4),
+                    "spin_rate": (2300, 2500)
+                },
+                "SLIDER": {
+                    "ideal_mechanics": {
+                        "arm_slot": 73.0,
+                        "stride_length": 0.94,
+                        "hip_shoulder_separation": 39.0,
+                        "front_knee_flex": 43.0,
+                        "trunk_tilt": 29.0
+                    },
+                    "velocity_range": (82, 85),
+                    "release_point": (6.1, 6.5),
+                    "spin_rate": (2600, 2800)
+                },
+                "CHANGEUP": {
+                    "ideal_mechanics": {
+                        "arm_slot": 72.0,
+                        "stride_length": 0.95,
+                        "hip_shoulder_separation": 40.0,
+                        "front_knee_flex": 42.0,
+                        "trunk_tilt": 28.0
+                    },
+                    "velocity_range": (88, 91),
+                    "release_point": (6.0, 6.4),
+                    "spin_rate": (1800, 2000)
+                },
+                "CURVEBALL": {
+                    "ideal_mechanics": {
+                        "arm_slot": 74.0,
+                        "stride_length": 0.96,
+                        "hip_shoulder_separation": 41.0,
+                        "front_knee_flex": 44.0,
+                        "trunk_tilt": 30.0
+                    },
+                    "velocity_range": (75, 78),
+                    "release_point": (6.2, 6.6),
+                    "spin_rate": (2500, 2700)
+                }
+            },
+            "height": 77,
+            "handedness": "RIGHT",
+            "signature_pitch": "SPLITTER"
+        }
+    }
+
+    # Game context configurations
+    GAME_CONTEXTS = {
+        "REGULAR SEASON": {
+            "mechanics_tolerance": 1.0,
+            "velocity_adjustment": 0,
+            "control_emphasis": 1.0
+        },
+        "HIGH PRESSURE": {
+            "mechanics_tolerance": 0.8,
+            "velocity_adjustment": 1,
+            "control_emphasis": 1.2
+        },
+        "PERFECT GAME": {
+            "mechanics_tolerance": 0.7,
+            "velocity_adjustment": 2,
+            "control_emphasis": 1.5
+        },
+        "UNKNOWN": {
+            "mechanics_tolerance": 1.0,
+            "velocity_adjustment": 0,
+            "control_emphasis": 1.0
+        }
+    }
+    
+    # Vertex AI settings
+    VERTEX_AI = {
+        "project_id": "baseball-pitcher-analyzer",
+        "location": "us-central1",
+        "model_id": "pitcher-mechanics-model",  # Your model ID
+        "endpoint_id": None,  # If using a specific endpoint
+    }
+    
+    # Google API Configuration
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')  # Get from environment variable instead
+    
+    # Vertex AI Configuration - Development defaults
+    PROJECT_ID = "pitcher-analysis-dev"  # Default development project
+    LOCATION = "us-central1"
+    MODEL_ID = "pitcher-mechanics-model-v1"
+    ENDPOINT_ID = "pitcher-mechanics-endpoint-1"
+    
+    # Analysis Configuration
+    MIN_CONFIDENCE_THRESHOLD = 0.7
+    FRAME_SAMPLE_RATE = 5
+    
+    # Analysis Settings
+    FRAME_SAMPLE_COUNT = 5  # Number of key frames to analyze
+    MIN_FRAME_QUALITY = 0.7  # Minimum quality threshold for frame analysis
+    
+    # Mechanics Thresholds
+    MECHANICS_THRESHOLDS = {
+        'AMATEUR': {
+            'score_multiplier': 1.2,  # More forgiving scoring
+            'deviation_threshold': 15  # Larger acceptable deviation range
+        },
+        'PRO': {
+            'score_multiplier': 1.0,
+            'deviation_threshold': 10
         }
     }
     
@@ -306,4 +453,17 @@ class Config:
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
             
+        cls.validate_config()
+            
         return True 
+
+    @classmethod
+    def validate_config(cls):
+        if not cls.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not set")
+        if not cls.PROJECT_ID:
+            raise ValueError("PROJECT_ID is not set")
+        if not cls.MODEL_ID:
+            raise ValueError("VERTEX_MODEL_ID environment variable is not set")
+        if not cls.ENDPOINT_ID:
+            raise ValueError("VERTEX_ENDPOINT_ID environment variable is not set") 

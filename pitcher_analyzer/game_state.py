@@ -1,9 +1,14 @@
 import requests
+import logging
 from datetime import datetime
+
+# Set up logging
+logger = logging.getLogger(__name__)
 
 class GameStateManager:
     def __init__(self):
         self.base_url = "https://statsapi.mlb.com/api/v1.1"
+        self.logger = logging.getLogger(__name__)
         
     def get_game_context(self, game_pk, pitcher_id):
         """Get game state data for specific pitcher"""
@@ -14,6 +19,7 @@ class GameStateManager:
                 return self._get_mock_game_state()
 
             url = f"{self.base_url}/game/{game_pk}/feed/live"
+            self.logger.info(f"Fetching game data from: {url}")
             response = requests.get(url)
             data = response.json()
             
@@ -30,6 +36,7 @@ class GameStateManager:
                 'previous_pitches': self._get_previous_pitches(data, pitcher_id)
             }
             
+            self.logger.info(f"Retrieved game state: inning={game_state['inning']}, outs={game_state['outs']}")
             return game_state
             
         except Exception as e:
@@ -38,6 +45,7 @@ class GameStateManager:
 
     def _get_mock_game_state(self):
         """Return mock game state for development/testing"""
+        self.logger.info("Using mock game state data")
         return {
             'inning': 6,
             'outs': 2,
@@ -57,7 +65,7 @@ class GameStateManager:
                 'third': bases.get('third', None) is not None
             }
         except Exception as e:
-            print(f"Error getting runner situation: {str(e)}")
+            self.logger.error(f"Error getting runner situation: {str(e)}")
             return {'first': False, 'second': False, 'third': False}
         
     def _get_score(self, data):
@@ -68,7 +76,7 @@ class GameStateManager:
                 'away': data['liveData']['linescore']['teams']['away']['runs']
             }
         except Exception as e:
-            print(f"Error getting score: {str(e)}")
+            self.logger.error(f"Error getting score: {str(e)}")
             return {'home': 0, 'away': 0}
         
     def _get_pitcher_stats(self, data, pitcher_id):
@@ -87,7 +95,7 @@ class GameStateManager:
                     
             return pitcher_stats['numberOfPitches'] if pitcher_stats else 0
         except Exception as e:
-            print(f"Error getting pitcher stats: {str(e)}")
+            self.logger.error(f"Error getting pitcher stats: {str(e)}")
             return 0
         
     def _get_previous_pitches(self, data, pitcher_id):
@@ -101,5 +109,5 @@ class GameStateManager:
                 and pitch.get('matchup', {}).get('pitcher', {}).get('id') == pitcher_id
             ][-3:]  # Return last 3 pitches
         except Exception as e:
-            print(f"Error getting previous pitches: {str(e)}")
+            self.logger.error(f"Error getting previous pitches: {str(e)}")
             return [] 

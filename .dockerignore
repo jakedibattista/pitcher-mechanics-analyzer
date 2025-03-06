@@ -1,0 +1,48 @@
+# Git
+.git
+.github
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+dist/
+*.egg-info/
+
+# Virtual Environment
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Test files
+test_*.py
+debug_*.py
+
+# Documentation
+README.md
+LICENSE
+*.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Other
+.DS_Store
+credentials/
+videos/
+*.mp4
+*.avi
+*.mov 
