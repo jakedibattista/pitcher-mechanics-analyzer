@@ -5,6 +5,11 @@ on:
     branches:
       - v2-docker-deployment
 
+# Add concurrency control
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -12,6 +17,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
       
     - name: Google Auth
       id: auth
@@ -24,17 +32,32 @@ jobs:
       with:
         project_id: baseball-pitcher-analyzer
         
+    - name: Configure Docker for Artifact Registry
+      run: gcloud auth configure-docker us-docker.pkg.dev
+      
     - name: Build and push Docker image
-      run: |
-        gcloud auth configure-docker us-docker.pkg.dev
-        docker build --platform linux/amd64 -t us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:latest .
-        docker push us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:latest
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        tags: us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         
     - name: Deploy to Cloud Run
       run: |
         gcloud run deploy pitcher-analyzer \
           --project baseball-pitcher-analyzer \
-          --image us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:latest \
+          --image us-docker.pkg.dev/baseball-pitcher-analyzer/gcr.io/pitcher-analyzer:${{ github.sha }} \
           --platform managed \
           --region us-central1 \
-          --allow-unauthenticated 
+          --allow-unauthenticated
+          
+    # Add a verification step
+    - name: Verify deployment
+      run: |
+        echo "Waiting for deployment to stabilize..."
+        sleep 30
+        DEPLOYED_URL=$(gcloud run services describe pitcher-analyzer --format='value(status.url)')
+        echo "Deployed at: $DEPLOYED_URL"
+        curl -s "$DEPLOYED_URL" | grep -q "Pitcher Analysis Tool" || (echo "Verification failed" && exit 1) 
