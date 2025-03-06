@@ -51,3 +51,4 @@ local_*.py
 # Development
 test_*.py
 debug_*.py venv311/
+.env
