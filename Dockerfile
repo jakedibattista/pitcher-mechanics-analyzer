@@ -1,8 +1,13 @@
 # Use Python 3.9 slim image with specific platform
-FROM --platform=linux/amd64 python:3.9-slim
+FROM python:3.9-slim
 
 # Set working directory
 WORKDIR /app
+
+# Set proxy environment variables if needed
+ENV HTTP_PROXY="http://proxy.wal-mart.com:8080"
+ENV HTTPS_PROXY="http://proxy.wal-mart.com:8080"
+ENV NO_PROXY="localhost,127.0.0.1"
 
 # Copy requirements first to leverage Docker cache
 COPY requirements.txt .
@@ -15,6 +20,11 @@ RUN apt-get update && \
     curl \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir -r requirements.txt
+
+# Unset proxy variables for application runtime
+ENV HTTP_PROXY=""
+ENV HTTPS_PROXY=""
+ENV NO_PROXY=""
 
 # Copy the rest of the application
 COPY . .

@@ -70,18 +70,12 @@ class PitcherAnalysis:
 
     def _determine_game_context(self, game_state, pitcher_name, pitch_type):
         """Determine game context based on game state and pitcher"""
+        if not game_state:
+            return None
+            
         if pitcher_name == 'KERSHAW' and (pitch_type in ['CURVEBALL', 'SLIDER']):
             return 'PERFECT_GAME'
         elif pitcher_name == 'CORTES' and pitch_type == 'FASTBALL':
             return 'RELIEF_PRESSURE'
         else:
-            return game_state['inning'] if game_state else None
-
-    def _determine_game_context_from_state(self, game_state, pitcher_name, pitch_type):
-        """Determine game context from game state"""
-        if pitcher_name == 'KERSHAW' and (pitch_type in ['CURVEBALL', 'SLIDER']):
-            return 'PERFECT_GAME'
-        elif pitcher_name == 'CORTES' and pitch_type == 'FASTBALL':
-            return 'RELIEF_PRESSURE'
-        else:
-            return game_state['inning'] 
+            return game_state.get('inning') 
