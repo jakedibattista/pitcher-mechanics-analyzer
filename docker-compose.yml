@@ -1,15 +1,20 @@
 services:
   pitcher-analyzer:
-    build: .
+    build:
+      context: .
+      args:
+        - HTTP_PROXY=http://proxy.wal-mart.com:8080
+        - HTTPS_PROXY=http://proxy.wal-mart.com:8080
+        - NO_PROXY=localhost,127.0.0.1
     ports:
       - "8503:8501"
     volumes:
-      - .:/app
-      - ./credentials:/app/credentials:ro
+      - ./credentials:/app/credentials
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/service-account.json
-      - GCS_BUCKET=baseball-pitcher-analyzer-videos
-      - GCS_LOCATION=US-CENTRAL1
+      - HTTP_PROXY=http://proxy.wal-mart.com:8080
+      - HTTPS_PROXY=http://proxy.wal-mart.com:8080
+      - NO_PROXY=localhost,127.0.0.1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8501"]
       interval: 30s

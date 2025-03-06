@@ -1,45 +1,32 @@
 # Use Python 3.9 slim image with specific platform
 FROM python:3.9-slim
 
+# Set proxy environment variables for build process
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+ENV NO_PROXY=${NO_PROXY}
+
 # Set working directory
 WORKDIR /app
 
-# Set proxy environment variables if needed
-ENV HTTP_PROXY="http://proxy.wal-mart.com:8080"
-ENV HTTPS_PROXY="http://proxy.wal-mart.com:8080"
-ENV NO_PROXY="localhost,127.0.0.1"
-
-# Copy requirements first to leverage Docker cache
+# Copy requirements first for better caching
 COPY requirements.txt .
 
 # Install dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir -r requirements.txt
-
-# Unset proxy variables for application runtime
-ENV HTTP_PROXY=""
-ENV HTTPS_PROXY=""
-ENV NO_PROXY=""
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
 
-# Production settings
-ENV PORT=8080
-ENV STREAMLIT_SERVER_PORT=8080
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+# Expose port for Streamlit
+EXPOSE 8501
 
-# Create directory for credentials
-RUN mkdir -p /app/credentials
-
-# Run Streamlit (simplified command)
+# Command to run the application
 CMD streamlit run pitcher_analyzer/streamlit_app.py \
-    --server.port=$PORT \
     --server.address=0.0.0.0
 
 # Set environment variables
