@@ -2,8 +2,6 @@
 
 A machine learning-powered tool for analyzing baseball pitcher mechanics using video analysis and Vertex AI.
 
-![Pitcher Analysis Demo](https://storage.googleapis.com/baseball-pitcher-analyzer-videos/demo_screenshot.png)
-
 ## Features
 
 - **Video Analysis**: Upload and analyze pitch videos with advanced computer vision
