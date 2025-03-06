@@ -2,206 +2,157 @@ import cv2
 from pathlib import Path
 from datetime import datetime
 import numpy as np
+import os
+from .config import Config
+import tempfile
+import asyncio
+import inspect
+import logging
 
 __all__ = ['create_analysis_visualization']
 
-def create_analysis_visualization(video_path, analysis_text, pitch_type, pitcher_name='KERSHAW', output_path=None):
-    """Create visualization with mechanical analysis overlay"""
-    if output_path is None:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        video_name = Path(video_path).stem
-        output_path = str(Path.cwd() / "analysis_output" / f"{video_name}_analysis_{timestamp}.mp4")
-    
-    cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-    
-    # Adjust overlay dimensions
-    overlay_width = int(width * 0.25)  # Reduce from 0.35 to 0.25
-    overlay_height = int(height * 0.45)  # Keep height the same
-    overlay_x = 20
-    overlay_y = int(height * 0.50)
-    header_height = int(overlay_height * 0.20)
-    
-    # Font sizes
-    TITLE_SIZE = 2.2  # Increased from 1.8 to 2.2
-    STATUS_SIZE = 1.4  # Keep pitch type size the same
-    DATA_SIZE = 1.2   # Keep category size
-    EXPLANATION_SIZE = 0.9  # Keep explanation size
+logger = logging.getLogger(__name__)
 
-    # Colors (BGR) - just using white for all text now
-    NAVY = (64, 35, 12)
-    BLUE = (135, 48, 0)
-    WHITE = (255, 255, 255)
+def create_analysis_visualization(video_path, analysis_data):
+    """
+    Create a visualization of the pitch analysis by adding overlays to the video.
     
-    def parse_analysis_text(text):
-        """Parse analysis text into explanations and assessment"""
-        try:
-            result = {
-                'fatigue': '',
-                'arm': '',
-                'balance': '',
-                'assessment': 'N/A'
-            }
-            
-            current_category = None
-            lines = text.split('\n')
-            
-            for line in lines:
-                line = line.strip()
-                if not line:
-                    continue
-                
-                if 'Signs of Fatigue:' in line:
-                    current_category = 'fatigue'
-                elif 'Arm:' in line:
-                    current_category = 'arm'
-                elif 'Balance:' in line:
-                    current_category = 'balance'
-                elif 'Mechanics Assessment:' in line:
-                    result['assessment'] = line.split('Mechanics Assessment:')[1].strip()
-                elif line.startswith('-'):
-                    if current_category:
-                        result[current_category] = line[1:].strip()
-            
-            return result
-            
-        except Exception as e:
-            print(f"Error parsing analysis text: {str(e)}")
-            return {
-                'fatigue': '',
-                'arm': '',
-                'balance': '',
-                'assessment': 'N/A'
-            }
-
-    def wrap_text(text, max_width, font_face, font_scale):
-        """Wrap text to fit within specified width"""
-        words = text.split()
-        lines = []
-        current_line = []
+    Args:
+        video_path (str): Path to the original video
+        analysis_data (dict): Analysis results including mechanics score and deviations
         
-        for word in words:
-            current_line.append(word)
-            # Get size of current line with test word
-            line_text = ' '.join(current_line)
-            (line_width, _) = cv2.getTextSize(line_text, font_face, font_scale, 1)[0]
+    Returns:
+        str: Path to the analyzed video with overlays
+    """
+    try:
+        # Create a temporary file for the output video
+        output_file = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+        output_path = output_file.name
+        output_file.close()
+        
+        # Open the video file
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video file: {video_path}")
+        
+        # Get video properties
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        
+        # Create VideoWriter object
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        # Get analysis data
+        mechanics_score = analysis_data.get('mechanics_score', 0)
+        
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
             
-            if line_width > max_width:
-                # Remove last word and add line to lines
-                current_line.pop()
-                lines.append(' '.join(current_line))
-                current_line = [word]  # Start new line with word that didn't fit
-                
-        # Add remaining words
-        if current_line:
-            lines.append(' '.join(current_line))
+            # Add score overlay
+            cv2.putText(
+                frame,
+                f"Score: {mechanics_score:.1f}%",
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 255, 0),
+                2
+            )
             
-        return lines
+            out.write(frame)
+        
+        # Release resources
+        cap.release()
+        out.release()
+        
+        logger.info(f"Analysis visualization created at: {output_path}")
+        return output_path
+        
+    except Exception as e:
+        logger.error(f"Error creating visualization: {str(e)}")
+        return video_path  # Return original video path if visualization fails
 
-    analysis = parse_analysis_text(analysis_text)
+def add_analysis_overlay(frame, analysis, pitch_type):
+    """Add analysis information overlay to frame"""
+    # Add error checking for missing keys
+    if not isinstance(analysis, dict):
+        logging.error(f"Expected analysis to be a dict, got {type(analysis)}")
+        # Create a default analysis dict to avoid errors
+        analysis = {
+            'mechanics_score': 0.0,
+            'risk_factors': ['Analysis failed'],
+            'recommendations': ['Please try again'],
+            'deviations': {}  # Add empty deviations dict
+        }
     
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
-            
-        overlay = frame.copy()
-        
-        # Background
-        cv2.rectangle(overlay, 
-                     (overlay_x, overlay_y), 
-                     (overlay_x + overlay_width, overlay_y + overlay_height),
-                     NAVY, -1)
-        
-        # Header
-        cv2.rectangle(overlay,
-                     (overlay_x, overlay_y),
-                     (overlay_x + overlay_width, overlay_y + header_height),
-                     BLUE, -1)
-
-        # Header text
-        header_text = "PITCHER SCORECARD"
-        text_size = cv2.getTextSize(header_text, cv2.FONT_HERSHEY_COMPLEX_SMALL, TITLE_SIZE, 2)[0]
-        header_x = int(overlay_x + (overlay_width - text_size[0]) // 2)
-        header_y = int(overlay_y + (header_height / 2) + text_size[1]/2)
-        cv2.putText(overlay, header_text,
-                   (header_x, header_y),
-                   cv2.FONT_HERSHEY_COMPLEX_SMALL, TITLE_SIZE, WHITE, 1)
-
-        # Content spacing
-        line_spacing = (overlay_height - header_height - 30) / 6  # Keep tighter spacing
-        content_x = int(overlay_x + 15)
-        y = overlay_y + header_height + int(line_spacing * 0.8)
-
-        # Pitch type
-        status_text = pitch_type.upper()
-        desc_width = cv2.getTextSize(status_text, cv2.FONT_HERSHEY_SIMPLEX, STATUS_SIZE, 2)[0][0]
-        desc_x = int(overlay_x + (overlay_width - desc_width) // 2)
-        cv2.putText(overlay, status_text,
-                   (desc_x, int(y)),
-                   cv2.FONT_HERSHEY_SIMPLEX, STATUS_SIZE, WHITE, 1)
-
-        # Add deviation with more spacing before and after
-        y += line_spacing * 0.8  # Increased from 0.6
-        deviation_text = f"Deviation from ideal: {analysis['assessment']}"
-        dev_width = cv2.getTextSize(deviation_text, cv2.FONT_HERSHEY_SIMPLEX, DATA_SIZE * 0.8, 1)[0][0]
-        dev_x = int(overlay_x + (overlay_width - dev_width) // 2)
-        cv2.putText(overlay, deviation_text,
-                  (dev_x, int(y)),
-                  cv2.FONT_HERSHEY_SIMPLEX, DATA_SIZE * 0.8, WHITE, 1)
-
-        # Add more space before categories
-        y += line_spacing * 0.8  # Increased from 0.6
-
-        # Categories with scores and explanations
-        categories = [
-            ("SIGNS OF FATIGUE", analysis['fatigue']),
-            ("ARM", analysis['arm']),
-            ("BALANCE", analysis['balance'])
-        ]
-        
-        for cat, explanation in categories:
-            # Category name only (no score)
-            cv2.putText(overlay, cat,
-                      (content_x, int(y)),
-                      cv2.FONT_HERSHEY_SIMPLEX, DATA_SIZE, WHITE, 1)
-            
-            # Add explanation with tighter spacing and right margin
-            if explanation:
-                available_width = overlay_width - content_x - 60
-                wrapped_lines = wrap_text(explanation, 
-                                       available_width,
-                                       cv2.FONT_HERSHEY_SIMPLEX, 
-                                       EXPLANATION_SIZE)
-                
-                explanation_y = y + int(line_spacing * 0.35)
-                
-                # Add bullet only for first line
-                first_line = True
-                for line in wrapped_lines:
-                    prefix = "- " if first_line else "  "
-                    cv2.putText(overlay, f"{prefix}{line}",
-                              (content_x + 20, int(explanation_y)),
-                              cv2.FONT_HERSHEY_SIMPLEX, EXPLANATION_SIZE, WHITE, 1)
-                    explanation_y += int(line_spacing * 0.5)
-                    first_line = False
-                
-                y = explanation_y + int(line_spacing * 0.25)
-            else:
-                y += line_spacing * 0.8
-
-        # Blend overlay
-        frame = cv2.addWeighted(overlay, 0.95, frame, 0.05, 0)
-        out.write(frame)
+    # Ensure all required keys exist
+    if 'mechanics_score' not in analysis:
+        analysis['mechanics_score'] = 0.0
     
-    cap.release()
-    out.release()
-    return output_path
+    if 'risk_factors' not in analysis:
+        analysis['risk_factors'] = ['Analysis incomplete']
+    
+    if 'recommendations' not in analysis:
+        analysis['recommendations'] = ['Please try again']
+    
+    if 'deviations' not in analysis:
+        analysis['deviations'] = {}
+    
+    # Create a copy for the overlay
+    overlay = frame.copy()
+    height, width = frame.shape[:2]
+    
+    # Create semi-transparent background for text
+    text_bg = np.zeros((height, width, 3), dtype=np.uint8)
+    
+    # Add mechanics score (top left)
+    score_text = f"Mechanics Score: {analysis.get('mechanics_score', 0.0):.1f}%"
+    cv2.putText(text_bg, score_text, 
+                (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    
+    # Add deviations (left side)
+    y_pos = 70
+    if analysis['deviations']:
+        for aspect, deviation in analysis['deviations'].items():
+            text = f"{aspect}: {deviation:.1f}% deviation"
+            cv2.putText(text_bg, text, (10, y_pos), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+            y_pos += 30
+    else:
+        # Handle case with no deviations
+        pass  # Add appropriate visualization for no deviations
+    
+    # Add recommendations (right side)
+    y_pos = 70
+    cv2.putText(text_bg, "Recommendations:", (width - 400, y_pos), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+    y_pos += 30
+    for rec in analysis['recommendations'][:3]:  # Show top 3 recommendations
+        cv2.putText(text_bg, f"• {rec[:50]}...", (width - 390, y_pos), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+        y_pos += 25
+    
+    # Add risk factors (bottom)
+    if analysis['risk_factors']:
+        y_pos = height - 100
+        cv2.putText(text_bg, "Risk Factors:", (10, y_pos), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+        y_pos += 30
+        for risk in analysis['risk_factors'][:2]:  # Show top 2 risk factors
+            cv2.putText(text_bg, f"! {risk[:60]}...", (20, y_pos), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1)
+            y_pos += 25
+    
+    # Blend the text background with the original frame
+    alpha = 0.3  # Transparency for the background
+    mask = text_bg.sum(axis=2) > 0
+    overlay[mask] = cv2.addWeighted(text_bg[mask], alpha, overlay[mask], 1 - alpha, 0)
+    
+    return overlay
 
 def create_mechanics_overlay(self, frame, landmarks, deviations):
     """Create visual overlay showing mechanical deviations"""

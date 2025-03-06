@@ -3,12 +3,22 @@ import os
 from google.oauth2 import service_account
 from google.cloud import storage
 import tempfile
-from pitcher_analyzer.analyzer import PitcherAnalyzer
-from pitcher_analyzer.config import PITCHER_PROFILES
+from pitcher_analyzer.main import PitcherAnalysis
+from pitcher_analyzer.config import Config
 import cv2
 from dotenv import load_dotenv
 from pitcher_analyzer.game_state import GameStateManager
 import datetime
+from pitcher_analyzer.data.pitcher_profiles import PITCHER_PROFILES
+import logging
+import asyncio
+import traceback
+import inspect
+import numpy as np
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Add pitcher ID mapping
 PITCHER_ID_MAPPING = {
@@ -113,19 +123,33 @@ def render_pitcher_selection():
     
     with col1:
         pitcher_name = st.selectbox(
-            "Select Pitcher",
-            options=list(available_pitchers.keys()),
-            index=0,
-            key="pitcher_selector"
+            "Select Pitcher Profile",
+            options=Config.PITCHER_PROFILES.keys(),
+            index=0
         )
     
     with col2:
-        pitch_type = st.selectbox(
-            "Select Pitch Type",
-            options=available_pitchers[pitcher_name]["pitches"],
-            index=0,
-            key="pitch_type_selector"
+        st.markdown("""
+        ##### Game Context
+        Different situations require different mechanical focuses:
+        - **REGULAR SEASON**: Standard mechanical analysis
+        - **HIGH PRESSURE**: Focus on mechanical stability
+        - **PERFECT GAME**: Emphasis on control and consistency
+        - **UNKNOWN**: General analysis without context
+        """)
+        
+        game_context = st.selectbox(
+            "Game Context",
+            options=["Regular Season", "Playoff Game", "High Leverage", "Low Leverage"],
+            index=0
         )
+
+    # Dynamic pitch type options based on selected pitcher
+    pitch_type = st.selectbox(
+        "Pitch Type",
+        options=["Fastball", "Curveball", "Slider", "Changeup"],
+        index=0
+    )
         
     return pitcher_name, pitch_type
 
@@ -252,9 +276,10 @@ def render_video_uploader():
     """)
     
     uploaded_file = st.file_uploader(
-        "Upload Pitch Video", 
-        type=["mp4", "mov", "avi"],
-        help="Upload a video of a single pitch. For best results, video should start before wind-up and end after follow-through."
+        "Upload Pitch Video",
+        type=["mp4", "mov"],
+        accept_multiple_files=False,
+        help="Upload a video of a single pitch (MP4 or MOV format)"
     )
     return uploaded_file
 
@@ -363,6 +388,19 @@ def display_analysis_results(result):
         if 'analysis' in result:
             st.markdown(result['analysis'])
 
+def save_uploaded_video(uploaded_file):
+    try:
+        # Create a temporary file with the correct extension
+        suffix = os.path.splitext(uploaded_file.name)[1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
+            # Write the uploaded file to disk
+            tmp_file.write(uploaded_file.getvalue())
+            logger.info(f"Video saved to temporary file: {tmp_file.name}")
+            return tmp_file.name
+    except Exception as e:
+        logger.error(f"Error saving uploaded video: {str(e)}")
+        return None
+
 def main():
     """Main function to run the Streamlit app"""
     st.set_page_config(
@@ -371,81 +409,124 @@ def main():
         layout="wide"
     )
     
-    st.title("⚾ Pitcher Mechanics Analyzer")
+    st.title("Pitcher Mechanics Analyzer")
+    
+    # Configuration section
+    st.subheader("Analysis Configuration")
+    
+    # Pitcher Selection
+    st.subheader("Pitcher Selection")
+    st.write("Choose who you want to compare mechanics against:")
+    selected_pitcher = st.selectbox(
+        "Select Pitcher Profile",
+        options=Config.PITCHER_PROFILES,
+        key="pitcher_select"
+    )
+    
+    # Game Context
+    st.subheader("Game Context")
+    st.write("Different situations require different mechanical focuses:")
+    selected_context = st.selectbox(
+        "Game Context",
+        options=["Regular Season", "High Pressure", "Training"],
+        key="context_select"
+    )
+    
+    # Pitch Type
+    st.subheader("Pitch Type Selection")
+    st.write("Each pitch type has unique mechanical requirements:")
+    selected_pitch = st.selectbox(
+        "Pitch Type",
+        options=["Fastball", "Curveball", "Slider", "Changeup"],
+        key="pitch_select"
+    )
+    
+    # Video Upload
+    st.subheader("Upload Your Pitch")
+    uploaded_file = st.file_uploader(
+        "Upload Pitch Video",
+        type=["mp4", "mov", "mpeg4"],
+        help="Upload a video of the pitch (MP4 or MOV format)"
+    )
+
+    # Store the uploaded file path in session state
+    if uploaded_file is not None:
+        # Save uploaded file to temporary location
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
+            tmp_file.write(uploaded_file.getvalue())
+            video_path = tmp_file.name
+            st.session_state['video_path'] = video_path
+    
+    # Analysis Button and Results
+    if uploaded_file is not None and st.button("Analyze Pitch"):
+        try:
+            with st.spinner("Analyzing pitch mechanics..."):
+                analyzer = PitcherAnalysis()
+                result = analyzer.analyze_pitch_sync(
+                    video_path=st.session_state['video_path'],
+                    pitcher=selected_pitcher,
+                    pitch=selected_pitch,
+                    context=selected_context
+                )
+
+                if isinstance(result, tuple):
+                    analyzed_video_path, analysis_data = result
+                    
+                    # Now show the video after analysis
+                    st.subheader("Analysis Video")
+                    st.video(st.session_state['video_path'])
+
+                    # Display analysis results
+                    st.subheader("Mechanics Analysis")
+                    
+                    # Display mechanics score
+                    st.metric(
+                        "Overall Score",
+                        f"{analysis_data.get('mechanics_score', 0):.1f}%"
+                    )
+
+                    # Display deviations
+                    st.subheader("Mechanical Deviations")
+                    deviations = analysis_data.get('deviations', [])
+                    if deviations:
+                        for dev in deviations:
+                            st.write(f"• {dev}")
+                    else:
+                        st.write("No specific deviations identified")
+
+                    # Display risk factors
+                    st.subheader("Risk Factors")
+                    risk_factors = analysis_data.get('risk_factors', [])
+                    for risk in risk_factors:
+                        st.write(f"• {risk}")
+
+                    # Display recommendations
+                    st.subheader("Recommendations")
+                    recommendations = analysis_data.get('recommendations', [])
+                    for rec in recommendations:
+                        st.write(f"• {rec}")
+
+        except Exception as e:
+            st.error(f"Analysis failed: {str(e)}")
+
+    # Tool Information
+    st.markdown("---")
     st.markdown("""
-        Upload a video of a pitcher's delivery to analyze mechanics, compare to ideal form,
-        and get recommendations for improvement.
+    ## How to Use This Tool
+    
+    This tool uses advanced computer vision to analyze pitching mechanics. Here's how to get started:
+    
+    1. Select a pitcher profile from the dropdown
+    2. Choose the game context and pitch type
+    3. Upload a video of the pitch to analyze
+    
+    **Video Requirements:**
+    - Format: MP4 or MOV
+    - Duration: 5-15 seconds
+    - Camera Angle: Side view
+    - Frame Rate: 30fps or higher
+    - Resolution: 720p or higher
     """)
-    
-    # Initialize analyzer
-    try:
-        credentials = initialize_google_credentials()
-        analyzer = PitcherAnalyzer(credentials)
-    except Exception as e:
-        st.error(f"Error initializing Google Cloud credentials: {str(e)}")
-        st.stop()
-    
-    # Step 1: Select pitcher and pitch type
-    pitcher_name, pitch_type = render_pitcher_selection()
-    
-    # Step 2: Select game context
-    game_info = render_game_selection(pitcher_name)
-    
-    # Step 3: Upload video
-    uploaded_file = render_video_uploader()
-    
-    if uploaded_file:
-        # Save and validate video
-        video_path = save_uploaded_file(uploaded_file)
-        
-        if video_path:
-            validation = validate_video(video_path)
-            
-            if not validation["valid"]:
-                st.error(f"Error validating video file: {validation.get('error', 'Unknown error')}")
-            else:
-                # Show warnings if any
-                for warning in validation.get("warnings", []):
-                    st.warning(warning)
-                
-                # Show video preview
-                st.video(uploaded_file)
-                
-                if st.button("Analyze Pitch"):
-                    try:
-                        with st.spinner('Analyzing pitch mechanics...'):
-                            # Extract game info if available
-                            game_pk = None
-                            pitcher_id = None
-                            if game_info:
-                                game_pk = game_info.get("game_pk")
-                                pitcher_id = game_info.get("pitcher_id")
-                            
-                            results = analyzer.analyze_pitch(
-                                video_path=video_path,
-                                pitcher_name=pitcher_name,
-                                pitch_type=pitch_type,
-                                game_pk=game_pk,
-                                pitcher_id=pitcher_id
-                            )
-                            
-                            if results:
-                                display_analysis_results(results)
-                                
-                                # Display game context if available
-                                if 'game_context' in results:
-                                    st.subheader("Game Context")
-                                    st.write(f"Context: {results['game_context']}")
-                                
-                            else:
-                                st.error("Analysis failed. Please try again.")
-                                
-                        # Cleanup temporary file
-                        if video_path and os.path.exists(video_path):
-                            os.unlink(video_path)
-                            
-                    except Exception as e:
-                        st.error(f"An error occurred during analysis: {str(e)}")
 
 if __name__ == "__main__":
     main() 
