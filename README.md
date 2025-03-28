@@ -4,7 +4,7 @@ An AI-powered tool for analyzing baseball pitcher mechanics using computer visio
 
 See a demo of the product in action here: https://www.youtube.com/watch?v=nHqDvu8WAPM
 
-Production URL: https://pitcher-analyzer-east-238493405692.us-east4.run.app/
+Production URL: 
 
 Updated Github for GoogleCloud Next 2025: https://github.com/jakedibattista/GoogleCloud-PitcherAnalyzer
 
